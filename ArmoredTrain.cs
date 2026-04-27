@@ -175,7 +175,7 @@ namespace Oxide.Plugins
 
         void OnEntitySpawned(HelicopterDebris entity)
         {
-            if (!entity.IsExists() || entity.ShortPrefabName != "servergibs_bradley")
+            if (!entity.IsExists() || entity.ShortPrefabName != "servergibs_bradley" || eventController == null)
                 return;
 
             if (Vector3.Distance(eventController.GetEventPosition(), entity.transform.position) < eventController.eventConfig.zoneRadius)
@@ -193,12 +193,12 @@ namespace Oxide.Plugins
 
         object OnEntityTakeDamage(TrainCar trainCar, HitInfo info)
         {
-            if (trainCar == null || trainCar.net == null || info == null)
+            if (trainCar == null || trainCar.net == null || info == null || eventController == null)
                 return null;
 
             if (eventController.IsTrainWagon(trainCar.net.ID.Value))
             {
-                if (info.InitiatorPlayer.IsRealPlayer())
+                if (info.InitiatorPlayer != null && info.InitiatorPlayer.IsRealPlayer())
                     eventController.OnTrainAttacked(info.InitiatorPlayer);
 
                 return true;
@@ -209,7 +209,7 @@ namespace Oxide.Plugins
 
         object OnEntityTakeDamage(PatrolHelicopter patrolHelicopter, HitInfo info)
         {
-            if (patrolHelicopter == null || patrolHelicopter.net == null || info == null || !info.InitiatorPlayer.IsRealPlayer())
+            if (patrolHelicopter == null || patrolHelicopter.net == null || info == null || info.InitiatorPlayer == null || eventController == null || !info.InitiatorPlayer.IsRealPlayer())
                 return null;
 
             EventHeli eventHeli = EventHeli.GetEventHeliByNetId(patrolHelicopter.net.ID.Value);
@@ -230,13 +230,13 @@ namespace Oxide.Plugins
 
         object OnEntityTakeDamage(BradleyAPC bradley, HitInfo info)
         {
-            if (bradley == null || bradley.net == null || info == null)
+            if (bradley == null || bradley.net == null || info == null || eventController == null)
                 return null;
 
             if (!eventController.IsTrainBradley(bradley.net.ID.Value))
                 return null;
 
-            if (!info.InitiatorPlayer.IsRealPlayer())
+            if (info.InitiatorPlayer == null || !info.InitiatorPlayer.IsRealPlayer())
                 return true;
 
             if (!eventController.IsPlayerCanDealDamage(info.InitiatorPlayer, bradley, true))
@@ -249,13 +249,13 @@ namespace Oxide.Plugins
 
         object OnEntityTakeDamage(AutoTurret autoTurret, HitInfo info)
         {
-            if (autoTurret == null || autoTurret.net == null || info == null)
+            if (autoTurret == null || autoTurret.net == null || info == null || eventController == null)
                 return null;
 
             if (!eventController.IsTrainTurret(autoTurret.net.ID.Value))
                 return null;
 
-            if (!info.InitiatorPlayer.IsRealPlayer())
+            if (info.InitiatorPlayer == null || !info.InitiatorPlayer.IsRealPlayer())
                 return true;
             else if (!eventController.IsPlayerCanDealDamage(info.InitiatorPlayer, autoTurret, true))
                 return true;
@@ -267,13 +267,13 @@ namespace Oxide.Plugins
 
         object OnEntityTakeDamage(SamSite samSite, HitInfo info)
         {
-            if (samSite == null || samSite.net == null || info == null)
+            if (samSite == null || samSite.net == null || info == null || eventController == null)
                 return null;
 
             if (!eventController.IsTrainSamSite(samSite.net.ID.Value))
                 return null;
 
-            if (!info.InitiatorPlayer.IsRealPlayer())
+            if (info.InitiatorPlayer == null || !info.InitiatorPlayer.IsRealPlayer())
                 return true;
             else if (!eventController.IsPlayerCanDealDamage(info.InitiatorPlayer, samSite, true))
                 return true;
@@ -285,7 +285,7 @@ namespace Oxide.Plugins
 
         object OnEntityTakeDamage(ElectricSwitch electricSwitch, HitInfo info)
         {
-            if (electricSwitch == null || electricSwitch.net == null || info == null)
+            if (electricSwitch == null || electricSwitch.net == null || info == null || eventController == null)
                 return null;
 
             if (eventController.IsTrainSwitch(electricSwitch.net.ID.Value))
@@ -296,7 +296,7 @@ namespace Oxide.Plugins
 
         object OnEntityTakeDamage(PowerCounter powerCounter, HitInfo info)
         {
-            if (powerCounter == null || powerCounter.net == null || info == null)
+            if (powerCounter == null || powerCounter.net == null || info == null || eventController == null)
                 return null;
 
             if (eventController.IsTrainCounter(powerCounter.net.ID.Value))
@@ -307,10 +307,13 @@ namespace Oxide.Plugins
 
         object OnEntityTakeDamage(BasePlayer player, HitInfo info)
         {
+            if (eventController == null)
+                return null;
+
             ScientistNPC scientistNPC = player as ScientistNPC;
             if (scientistNPC != null)
             {
-                if (scientistNPC == null || scientistNPC.net == null || info == null || !info.InitiatorPlayer.IsRealPlayer())
+                if (scientistNPC == null || scientistNPC.net == null || info == null || info.InitiatorPlayer == null || !info.InitiatorPlayer.IsRealPlayer())
                     return null;
 
                 if (NpcSpawnManager.GetScientistByNetId(scientistNPC.net.ID.Value) == null)
@@ -363,7 +366,7 @@ namespace Oxide.Plugins
 
         void OnEntityDeath(PatrolHelicopter patrolHelicopter, HitInfo info)
         {
-            if (patrolHelicopter == null || patrolHelicopter.net == null)
+            if (patrolHelicopter == null || patrolHelicopter.net == null || info == null || info.InitiatorPlayer == null || eventController == null || !info.InitiatorPlayer.IsRealPlayer())
                 return;
 
             EventHeli eventHeli = EventHeli.GetEventHeliByNetId(patrolHelicopter.net.ID.Value);
@@ -374,7 +377,7 @@ namespace Oxide.Plugins
 
         void OnEntityDeath(AutoTurret autoTurret, HitInfo info)
         {
-            if (autoTurret == null || autoTurret.net == null || info == null || !info.InitiatorPlayer.IsRealPlayer())
+            if (autoTurret == null || autoTurret.net == null || info == null || info.InitiatorPlayer == null || eventController == null || !info.InitiatorPlayer.IsRealPlayer())
                 return;
 
             if (eventController.IsTrainTurret(autoTurret.net.ID.Value))
@@ -383,7 +386,7 @@ namespace Oxide.Plugins
 
         void OnEntityDeath(BradleyAPC bradleyAPC, HitInfo info)
         {
-            if (bradleyAPC == null || bradleyAPC.net == null || info == null || !info.InitiatorPlayer.IsRealPlayer())
+            if (bradleyAPC == null || bradleyAPC.net == null || info == null || info.InitiatorPlayer == null || eventController == null || !info.InitiatorPlayer.IsRealPlayer())
                 return;
 
             if (eventController.IsTrainBradley(bradleyAPC.net.ID.Value))
@@ -392,7 +395,7 @@ namespace Oxide.Plugins
 
         void OnEntityDeath(ScientistNPC scientistNPC, HitInfo info)
         {
-            if (scientistNPC == null || scientistNPC.net == null || info == null || !info.InitiatorPlayer.IsRealPlayer())
+            if (scientistNPC == null || scientistNPC.net == null || info == null || info.InitiatorPlayer == null || eventController == null || !info.InitiatorPlayer.IsRealPlayer())
                 return;
 
             if (NpcSpawnManager.GetScientistByNetId(scientistNPC.net.ID.Value) != null)
@@ -406,7 +409,7 @@ namespace Oxide.Plugins
 
         object OnEntityEnter(TriggerTrainCollisions trigger, TrainCar trainCar)
         {
-            if (!ins._config.mainConfig.destrroyWagons || trigger == null || !trigger.owner.IsExists() || trigger.owner.net == null || !trainCar.IsExists() || trainCar.net == null)
+            if (!ins._config.mainConfig.destrroyWagons || trigger == null || !trigger.owner.IsExists() || trigger.owner.net == null || !trainCar.IsExists() || trainCar.net == null || eventController == null)
                 return null;
 
             if (eventController.IsTrainWagon(trainCar.net.ID.Value) && !eventController.IsTrainWagon(trigger.owner.net.ID.Value))
@@ -435,12 +438,12 @@ namespace Oxide.Plugins
 
         object CanHelicopterTarget(PatrolHelicopterAI heli, BasePlayer player)
         {
-            if (heli == null || heli.helicopterBase == null || heli.helicopterBase.net == null)
+            if (heli == null || heli.helicopterBase == null || heli.helicopterBase.net == null || eventController == null)
                 return null;
 
             EventHeli eventHeli = EventHeli.GetEventHeliByNetId(heli.helicopterBase.net.ID.Value);
 
-            if (eventHeli != null && !eventHeli.IsHeliCanTarget())
+            if (eventHeli != null && !eventController.IsAgressive())
                 return false;
 
             if (player.IsSleeping() || (player.InSafeZone() && !player.IsHostile()))
@@ -468,7 +471,7 @@ namespace Oxide.Plugins
 
         object CanBradleyApcTarget(BradleyAPC bradley, BaseEntity entity)
         {
-            if (bradley == null || bradley.net == null)
+            if (bradley == null || bradley.net == null || eventController == null)
                 return null;
 
             if (!eventController.IsTrainBradley(bradley.net.ID.Value))
@@ -487,7 +490,7 @@ namespace Oxide.Plugins
 
         object OnTrainCarUncouple(TrainCar trainCar, BasePlayer player)
         {
-            if (trainCar == null || player == null || trainCar.net == null)
+            if (trainCar == null || player == null || trainCar.net == null || eventController == null)
                 return null;
 
             if (eventController.IsTrainWagon(trainCar.net.ID.Value))
@@ -498,7 +501,7 @@ namespace Oxide.Plugins
 
         object CanTrainCarCouple(TrainCar trainCar1, TrainCar trainCar2)
         {
-            if (trainCar1 == null || trainCar1.net == null || trainCar2 == null || trainCar2.net == null)
+            if (trainCar1 == null || trainCar1.net == null || trainCar2 == null || trainCar2.net == null || eventController == null)
                 return null;
 
             if (eventController.IsTrainWagon(trainCar1.net.ID.Value) && !eventController.CanConnectToTrainWagon(trainCar1))
@@ -512,7 +515,7 @@ namespace Oxide.Plugins
 
         object CanPickupEntity(BasePlayer player, ElectricSwitch electricSwitch)
         {
-            if (player == null || electricSwitch == null || electricSwitch.net == null)
+            if (player == null || electricSwitch == null || electricSwitch.net == null || eventController == null)
                 return null;
 
             if (eventController.IsTrainSwitch(electricSwitch.net.ID.Value))
@@ -523,7 +526,7 @@ namespace Oxide.Plugins
 
         object CanPickupEntity(BasePlayer player, PowerCounter powerCounter)
         {
-            if (player == null || powerCounter == null || powerCounter.net == null)
+            if (player == null || powerCounter == null || powerCounter.net == null || eventController == null)
                 return null;
 
             if (eventController.IsTrainCounter(powerCounter.net.ID.Value))
@@ -534,7 +537,7 @@ namespace Oxide.Plugins
 
         object CanMountEntity(BasePlayer player, BaseVehicleSeat entity)
         {
-            if (!player.IsRealPlayer() || !entity.IsExists())
+            if (!player.IsRealPlayer() || !entity.IsExists() || eventController == null)
                 return null;
 
             TrainCar trainCar = entity.VehicleParent() as TrainCar;
@@ -550,7 +553,7 @@ namespace Oxide.Plugins
 
         object OnSwitchToggle(ElectricSwitch electricSwitch, BasePlayer player)
         {
-            if (!electricSwitch.IsExists() || electricSwitch.net == null || player == null)
+            if (!electricSwitch.IsExists() || electricSwitch.net == null || player == null || eventController == null)
                 return null;
 
             if (!eventController.IsTrainSwitch(electricSwitch.net.ID.Value))
@@ -567,7 +570,7 @@ namespace Oxide.Plugins
 
         void OnSwitchToggled(ElectricSwitch electricSwitch, BasePlayer player)
         {
-            if (!electricSwitch.IsExists() || electricSwitch.net == null || player == null)
+            if (!electricSwitch.IsExists() || electricSwitch.net == null || player == null || eventController == null)
                 return;
 
             if (!eventController.IsTrainSwitch(electricSwitch.net.ID.Value))
@@ -578,7 +581,7 @@ namespace Oxide.Plugins
 
         object OnCounterModeToggle(PowerCounter counter, BasePlayer player, bool mode)
         {
-            if (!counter.IsExists() || counter.net == null || player == null)
+            if (!counter.IsExists() || counter.net == null || player == null || eventController == null)
                 return null;
 
             if (eventController.IsTrainCounter(counter.net.ID.Value))
@@ -589,7 +592,7 @@ namespace Oxide.Plugins
 
         object OnCounterTargetChange(PowerCounter counter, BasePlayer player, int targetNumber)
         {
-            if (!counter.IsExists() || counter.net == null || player == null)
+            if (!counter.IsExists() || counter.net == null || player == null || eventController == null)
                 return null;
 
             if (eventController.IsTrainCounter(counter.net.ID.Value))
@@ -608,7 +611,7 @@ namespace Oxide.Plugins
 
         object CanLootEntity(BasePlayer player, LootContainer container)
         {
-            if (player == null || container == null || container.net == null)
+            if (player == null || container == null || container.net == null || eventController == null)
                 return null;
 
             if (LootManager.GetContainerDataByNetId(container.net.ID.Value) == null)
@@ -628,7 +631,7 @@ namespace Oxide.Plugins
 
         object CanLootEntity(BasePlayer player, SamSite samSite)
         {
-            if (player == null || samSite == null || samSite.net == null)
+            if (player == null || samSite == null || samSite.net == null || eventController == null)
                 return null;
 
             if (!eventController.IsTrainSamSite(samSite.net.ID.Value))
@@ -642,7 +645,7 @@ namespace Oxide.Plugins
 
         object OnSamSiteModeToggle(SamSite samSite, BasePlayer player, bool isEnable)
         {
-            if (player == null || samSite == null || samSite.net == null)
+            if (player == null || samSite == null || samSite.net == null || eventController == null)
                 return null;
 
             if (!eventController.IsTrainSamSite(samSite.net.ID.Value))
@@ -656,7 +659,7 @@ namespace Oxide.Plugins
 
         object OnTurretAuthorize(AutoTurret autoTurret, BasePlayer player)
         {
-            if (player == null || autoTurret == null || autoTurret.net == null)
+            if (player == null || autoTurret == null || autoTurret.net == null || eventController == null)
                 return null;
 
             if (!eventController.IsTrainTurret(autoTurret.net.ID.Value))
@@ -670,7 +673,7 @@ namespace Oxide.Plugins
 
         object CanHackCrate(BasePlayer player, HackableLockedCrate crate)
         {
-            if (player == null || crate == null || crate.net == null)
+            if (player == null || crate == null || crate.net == null || eventController == null)
                 return null;
 
             StorageContainerData storageContainerData = LootManager.GetContainerDataByNetId(crate.net.ID.Value);
@@ -794,7 +797,7 @@ namespace Oxide.Plugins
             if (!eventController.IsTrainTurret(autoTurret.net.ID.Value))
                 return null;
 
-            if (!info.InitiatorPlayer.IsRealPlayer())
+            if (info.InitiatorPlayer == null || !info.InitiatorPlayer.IsRealPlayer())
                 return false;
             else if (!eventController.IsPlayerCanDealDamage(info.InitiatorPlayer, autoTurret, true))
                 return false;
@@ -812,7 +815,7 @@ namespace Oxide.Plugins
             if (!eventController.IsTrainSamSite(samSite.net.ID.Value))
                 return null;
 
-            if (!info.InitiatorPlayer.IsRealPlayer())
+            if (info.InitiatorPlayer == null || !info.InitiatorPlayer.IsRealPlayer())
                 return false;
             else if (!eventController.IsPlayerCanDealDamage(info.InitiatorPlayer, samSite, true))
                 return false;
@@ -829,7 +832,7 @@ namespace Oxide.Plugins
 
             if (_config.zoneConfig.isPVPZone && !_config.supportedPluginsConfig.pveMode.enable)
             {
-                if (hitinfo.InitiatorPlayer.IsRealPlayer() && ZoneController.IsPlayerInZone(hitinfo.InitiatorPlayer.userID) && ZoneController.IsPlayerInZone(victim.userID))
+                if (hitinfo.InitiatorPlayer != null && hitinfo.InitiatorPlayer.IsRealPlayer() && ZoneController.IsPlayerInZone(hitinfo.InitiatorPlayer.userID) && ZoneController.IsPlayerInZone(victim.userID))
                     return true;
             }
 
@@ -858,7 +861,7 @@ namespace Oxide.Plugins
 
         object CanEntityTakeDamage(CustomBradley bradleyApc, HitInfo hitinfo)
         {
-            if (eventController == null || hitinfo == null || !hitinfo.InitiatorPlayer.IsRealPlayer() || bradleyApc.net == null)
+            if (eventController == null || hitinfo == null || hitinfo.InitiatorPlayer == null || !hitinfo.InitiatorPlayer.IsRealPlayer() || bradleyApc.net == null)
                 return null;
 
             if (eventController.IsTrainBradley(bradleyApc.net.ID.Value))
@@ -3121,10 +3124,16 @@ namespace Oxide.Plugins
             internal void DeleteController()
             {
                 if (eventCoroutine != null)
+                {
                     ServerMgr.Instance.StopCoroutine(eventCoroutine);
+                    eventCoroutine = null;
+                }
 
                 if (spawnCoroutine != null)
+                {
                     ServerMgr.Instance.StopCoroutine(spawnCoroutine);
+                    spawnCoroutine = null;
+                }
 
                 if (wagonCustomizator != null)
                     wagonCustomizator.DestroyCustomizator();
@@ -6708,14 +6717,35 @@ namespace Oxide.Plugins
                 if (intAmount <= 0)
                     return;
 
-                if (ins._config.supportedPluginsConfig.economicsConfig.plugins.Contains("Economics") && ins.plugins.Exists("Economics"))
-                    ins.Economics.Call("Deposit", userID.ToString(), amount);
+                try
+                {
+                    if (ins._config.supportedPluginsConfig.economicsConfig.plugins.Contains("Economics") && ins.plugins.Exists("Economics"))
+                        ins.Economics?.Call("Deposit", userID.ToString(), amount);
+                }
+                catch (Exception ex)
+                {
+                    ins.PrintError($"Failed to add Economics balance for {userID}: {ex.Message}");
+                }
 
-                if (ins._config.supportedPluginsConfig.economicsConfig.plugins.Contains("Server Rewards") && ins.plugins.Exists("ServerRewards"))
-                    ins.ServerRewards.Call("AddPoints", userID, intAmount);
+                try
+                {
+                    if (ins._config.supportedPluginsConfig.economicsConfig.plugins.Contains("Server Rewards") && ins.plugins.Exists("ServerRewards"))
+                        ins.ServerRewards?.Call("AddPoints", userID, intAmount);
+                }
+                catch (Exception ex)
+                {
+                    ins.PrintError($"Failed to add Server Rewards points for {userID}: {ex.Message}");
+                }
 
-                if (ins._config.supportedPluginsConfig.economicsConfig.plugins.Contains("IQEconomic") && ins.plugins.Exists("IQEconomic"))
-                    ins.IQEconomic.Call("API_SET_BALANCE", userID, intAmount);
+                try
+                {
+                    if (ins._config.supportedPluginsConfig.economicsConfig.plugins.Contains("IQEconomic") && ins.plugins.Exists("IQEconomic"))
+                        ins.IQEconomic?.Call("API_SET_BALANCE", userID, intAmount);
+                }
+                catch (Exception ex)
+                {
+                    ins.PrintError($"Failed to add IQEconomic balance for {userID}: {ex.Message}");
+                }
 
                 BasePlayer player = BasePlayer.FindByID(userID);
                 if (player != null)
@@ -6798,14 +6828,9 @@ namespace Oxide.Plugins
                 ["PveMode_BlockAction"] = "{0} You <color=#ce3f27>can't interact</color> with the event because of the cooldown!",
                 ["PveMode_YouAreNoOwner"] = "{0} You are not the <color=#ce3f27>owner</color> of the event!",
             }, this);
-        }
-
-        internal static string GetMessage(string langKey, string userID) => ins.lang.GetMessage(langKey, ins, userID);
-
-        internal static string GetMessage(string langKey, string userID, params object[] args) => (args.Length == 0) ? GetMessage(langKey, userID) : string.Format(GetMessage(langKey, userID), args);
         #endregion Lang
 
-        #region Config  
+        #region Config
         private PluginConfig _config;
 
         protected override void LoadDefaultConfig() => _config = PluginConfig.DefaultConfig();
@@ -6814,7 +6839,135 @@ namespace Oxide.Plugins
         {
             base.LoadConfig();
             _config = Config.ReadObject<PluginConfig>();
+            ValidateConfig();
             Config.WriteObject(_config, true);
+        }
+
+        void ValidateConfig()
+        {
+            if (_config == null)
+            {
+                PrintError("Configuration is null! Using default config.");
+                _config = PluginConfig.DefaultConfig();
+                return;
+            }
+
+            if (_config.mainConfig == null)
+            {
+                PrintError("MainConfig is null! Using default.");
+                _config.mainConfig = PluginConfig.DefaultConfig().mainConfig;
+            }
+            else
+            {
+                // Validate time values
+                if (_config.mainConfig.minTimeBetweenEvents < 0)
+                {
+                    PrintWarning($"minTimeBetweenEvents ({_config.mainConfig.minTimeBetweenEvents}) is negative. Setting to 600.");
+                    _config.mainConfig.minTimeBetweenEvents = 600;
+                }
+                if (_config.mainConfig.maxTimeBetweenEvents < _config.mainConfig.minTimeBetweenEvents)
+                {
+                    PrintWarning($"maxTimeBetweenEvents ({_config.mainConfig.maxTimeBetweenEvents}) is less than minTimeBetweenEvents. Setting to min + 300.");
+                    _config.mainConfig.maxTimeBetweenEvents = _config.mainConfig.minTimeBetweenEvents + 300;
+                }
+                if (_config.mainConfig.undergroundChance < 0 || _config.mainConfig.undergroundChance > 100)
+                {
+                    PrintWarning($"undergroundChance ({_config.mainConfig.undergroundChance}) is out of range 0-100. Clamping.");
+                    _config.mainConfig.undergroundChance = Mathf.Clamp(_config.mainConfig.undergroundChance, 0, 100);
+                }
+                if (_config.mainConfig.agressiveTime < 0)
+                {
+                    PrintWarning($"agressiveTime ({_config.mainConfig.agressiveTime}) is negative. Setting to 300.");
+                    _config.mainConfig.agressiveTime = 300;
+                }
+                if (_config.mainConfig.maxGroundDamageDistance < -1)
+                {
+                    PrintWarning($"maxGroundDamageDistance ({_config.mainConfig.maxGroundDamageDistance}) is invalid. Setting to -1.");
+                    _config.mainConfig.maxGroundDamageDistance = -1;
+                }
+                if (_config.mainConfig.maxHeliDamageDistance < -1)
+                {
+                    PrintWarning($"maxHeliDamageDistance ({_config.mainConfig.maxHeliDamageDistance}) is invalid. Setting to -1.");
+                    _config.mainConfig.maxHeliDamageDistance = -1;
+                }
+            }
+
+            // Validate event configs
+            if (_config.eventConfigs != null)
+            {
+                foreach (var eventConfig in _config.eventConfigs)
+                {
+                    if (eventConfig == null) continue;
+                    
+                    if (eventConfig.chance < 0 || eventConfig.chance > 100)
+                    {
+                        PrintWarning($"Event preset '{eventConfig.presetName}' has invalid chance {eventConfig.chance}. Clamping to 0-100.");
+                        eventConfig.chance = Mathf.Clamp(eventConfig.chance, 0, 100);
+                    }
+                    if (eventConfig.eventTime < 0)
+                    {
+                        PrintWarning($"Event preset '{eventConfig.presetName}' has negative eventTime. Setting to 1800.");
+                        eventConfig.eventTime = 1800;
+                    }
+                    if (eventConfig.stopTime < 0)
+                    {
+                        PrintWarning($"Event preset '{eventConfig.presetName}' has negative stopTime. Setting to 300.");
+                        eventConfig.stopTime = 300;
+                    }
+                    if (eventConfig.zoneRadius <= 0)
+                    {
+                        PrintWarning($"Event preset '{eventConfig.presetName}' has invalid zoneRadius {eventConfig.zoneRadius}. Setting to 100.");
+                        eventConfig.zoneRadius = 100;
+                    }
+                }
+            }
+
+            // Validate lists are not null
+            if (_config.eventConfigs == null)
+            {
+                PrintWarning("eventConfigs is null! Initializing empty list.");
+                _config.eventConfigs = new List<EventConfig>();
+            }
+            if (_config.locomotiveConfigs == null)
+            {
+                PrintWarning("locomotiveConfigs is null! Initializing empty list.");
+                _config.locomotiveConfigs = new List<LocomotiveConfig>();
+            }
+            if (_config.wagonConfigs == null)
+            {
+                PrintWarning("wagonConfigs is null! Initializing empty list.");
+                _config.wagonConfigs = new List<WagonConfig>();
+            }
+            if (_config.crateConfigs == null)
+            {
+                PrintWarning("crateConfigs is null! Initializing empty list.");
+                _config.crateConfigs = new List<CrateConfig>();
+            }
+            if (_config.npcConfigs == null)
+            {
+                PrintWarning("npcConfigs is null! Initializing empty list.");
+                _config.npcConfigs = new List<NpcConfig>();
+            }
+            if (_config.heliConfigs == null)
+            {
+                PrintWarning("heliConfigs is null! Initializing empty list.");
+                _config.heliConfigs = new List<HeliConfig>();
+            }
+            if (_config.bradleyConfigs == null)
+            {
+                PrintWarning("bradleyConfigs is null! Initializing empty list.");
+                _config.bradleyConfigs = new List<BradleyConfig>();
+            }
+            if (_config.turretConfigs == null)
+            {
+                PrintWarning("turretConfigs is null! Initializing empty list.");
+                _config.turretConfigs = new List<TurretConfig>();
+            }
+            if (_config.samSiteConfigs == null)
+            {
+                PrintWarning("samSiteConfigs is null! Initializing empty list.");
+                _config.samSiteConfigs = new List<SamSiteConfig>();
+            }
         }
 
         protected override void SaveConfig() => Config.WriteObject(_config);
