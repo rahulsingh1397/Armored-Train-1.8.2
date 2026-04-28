@@ -5249,10 +5249,38 @@ namespace Oxide.Plugins
             static HashSet<ulong> pveModeOwners = new HashSet<ulong>();
             static BasePlayer owner;
             static float lastZoneDeleteTime;
+            static Dictionary<ulong, bool> actionCache = new Dictionary<ulong, bool>();
+            static Dictionary<ulong, float> actionCacheTime = new Dictionary<ulong, float>();
+            const float CACHE_DURATION = 1.0f;
 
             internal static bool IsPveModeReady()
             {
                 return ins._config.supportedPluginsConfig.pveMode.enable && ins.plugins.Exists("PveMode");
+            }
+
+            static bool GetCachedActionResult(ulong playerId, out bool result)
+            {
+                result = false;
+                if (!actionCacheTime.ContainsKey(playerId))
+                    return false;
+
+                if (Time.realtimeSinceStartup - actionCacheTime[playerId] > CACHE_DURATION)
+                    return false;
+
+                result = actionCache[playerId];
+                return true;
+            }
+
+            static void SetCachedActionResult(ulong playerId, bool result)
+            {
+                actionCache[playerId] = result;
+                actionCacheTime[playerId] = Time.realtimeSinceStartup;
+            }
+
+            internal static void ClearCache()
+            {
+                actionCache.Clear();
+                actionCacheTime.Clear();
             }
 
             internal static BasePlayer UpdateAndGetEventOwner()
@@ -5369,14 +5397,22 @@ namespace Oxide.Plugins
                 lastZoneDeleteTime = 0;
                 pveModeOwners.Clear();
                 owner = null;
+                ClearCache();
             }
 
             internal static bool IsPveModeBlockAction(BasePlayer player)
             {
-                if (IsPveModeReady())
-                    return ins.PveMode.Call("CanActionEvent", ins.Name, player) != null;
+                if (!IsPveModeReady())
+                    return false;
 
-                return false;
+                ulong playerId = player.userID;
+                bool cachedResult;
+                if (GetCachedActionResult(playerId, out cachedResult))
+                    return cachedResult;
+
+                bool result = ins.PveMode.Call("CanActionEvent", ins.Name, player) != null;
+                SetCachedActionResult(playerId, result);
+                return result;
             }
 
             internal static bool IsPveModeBlockInterract(BasePlayer player)
