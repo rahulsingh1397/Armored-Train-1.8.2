@@ -2701,7 +2701,9 @@ namespace Oxide.Plugins
                 BuildManager.UpdateEntityMaxHealth(autoTurret, turretConfig.hp);
 
                 autoTurret.inventory.Insert(ItemManager.CreateByName(turretConfig.shortNameWeapon));
-                autoTurret.inventory.Insert(ItemManager.CreateByName(turretConfig.shortNameAmmo, turretConfig.countAmmo));
+                
+                if (turretConfig.countAmmo > 0)
+                    autoTurret.inventory.Insert(ItemManager.CreateByName(turretConfig.shortNameAmmo, turretConfig.countAmmo));
 
                 autoTurret.UpdateFromInput(IsAgressive() ? 10 : 0, 0);
                 autoTurret.isLootable = false;
@@ -2728,7 +2730,9 @@ namespace Oxide.Plugins
                 SamSite samSite = BuildManager.SpawnChildEntity(trainCar, "assets/prefabs/npc/sam_site_turret/sam_site_turret_deployed.prefab", locationConfig, 0, false) as SamSite;
                 BuildManager.UpdateEntityMaxHealth(samSite, samSiteConfig.hp);
 
-                samSite.inventory.Insert(ItemManager.CreateByName("ammo.rocket.sam", samSiteConfig.countAmmo));
+                if (samSiteConfig.countAmmo > 0)
+                    samSite.inventory.Insert(ItemManager.CreateByName("ammo.rocket.sam", samSiteConfig.countAmmo));
+                    
                 samSite.UpdateFromInput(IsAgressive() ? 100 : 0, 0);
                 samSite.isLootable = false;
                 samSite.dropFloats = false;
