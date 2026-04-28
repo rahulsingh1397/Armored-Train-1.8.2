@@ -2263,6 +2263,9 @@ namespace Oxide.Plugins
                 if (hackTime <= 0)
                     hackTime = 900;
 
+                if (!ins._config.mainConfig.extendEventForLockedCrate)
+                    return;
+
                 int minEventTime = hackTime + 30;
 
                 if (!isEventLooted && eventTime < minEventTime)
@@ -7061,6 +7064,7 @@ namespace Oxide.Plugins
             [JsonProperty(en ? "The NPC will jump to the ground when the train stops (above ground)" : "НПС будет спрыгивать на землю при остановке поезда (на поверхности)")] public bool isNpcJumpOnSurface { get; set; }
             [JsonProperty(en ? "The NPC will jump to the ground when the train stops (underground)" : "НПС будет спрыгивать на землю при остановке поезда (в метро)")] public bool isNpcJumpInSubway { get; set; }
             [JsonProperty(en ? "The event will not end if there are players in the event zone [true/false]" : "Ивент не будет заканчиваться, если в зоне ивента есть игроки [true/false]")] public bool dontStopEventIfPlayerInZone { get; set; }
+            [JsonProperty(en ? "Extend event if remaining time is not enough to unlock a locked crate [true/false]" : "Продлевать ивент, если оставшегося времени недостаточно для взлома заблокированного ящика [true/false]")] public bool extendEventForLockedCrate { get; set; }
             [JsonProperty(en ? "Setting up custom spawn points" : "Настройка кастомных тоек спавна")] public CustomSpawnPointConfig customSpawnPointConfig { get; set; }
         }
 
@@ -7488,6 +7492,7 @@ namespace Oxide.Plugins
                         isNpcJumpOnSurface = true,
                         isNpcJumpInSubway = true,
                         dontStopEventIfPlayerInZone = false,
+                        extendEventForLockedCrate = false,
                         customSpawnPointConfig = new CustomSpawnPointConfig
                         {
                             isEnabled = false,
