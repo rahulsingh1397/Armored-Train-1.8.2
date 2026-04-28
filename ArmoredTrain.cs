@@ -3235,7 +3235,21 @@ namespace Oxide.Plugins
                 if (ins._config.customizationConfig.profileName == "")
                     return;
 
+                if (!ins._config.customizationConfig.isEnabled)
+                    return;
+
                 customizeProfile = LoadProfile(ins._config.customizationConfig.profileName);
+
+                if (customizeProfile == null)
+                {
+                    customizeProfile = new CustomizeProfile
+                    {
+                        wagonPresets = new List<WagonCustomizationData>(),
+                        npcPresets = GetNewNpcCustomizeConfig()
+                    };
+                    SaveProfile(customizeProfile, ins._config.customizationConfig.profileName);
+                    ins.PrintWarning($"Created new customization profile: {ins._config.customizationConfig.profileName}.json");
+                }
 
                 if (!IsCustomizationCanApplied())
                 {
