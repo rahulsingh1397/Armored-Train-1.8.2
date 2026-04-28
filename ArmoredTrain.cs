@@ -335,11 +335,7 @@ namespace Oxide.Plugins
                             return true;
                         }
 
-                        if (_config.mainConfig.allowDriverDamage)
-                        {
-                            info.damageTypes.ScaleAll(10);
-                        }
-                        else
+                        if (!_config.mainConfig.allowDriverDamage)
                         {
                             info.damageTypes.ScaleAll(0);
                             return true;
@@ -3247,6 +3243,8 @@ namespace Oxide.Plugins
 
             internal static bool IsCustomizationCanApplied()
             {
+                if (!ins._config.customizationConfig.isEnabled)
+                    return false;
                 return customizeProfile != null && customizeProfile.wagonPresets != null && customizeProfile.wagonPresets.Count > 0;
             }
 
@@ -4642,7 +4640,8 @@ namespace Oxide.Plugins
             {
                 this.autoTurret = autoTurret;
                 this.targetRadius = targetRadius;
-                AutoTurret.interferenceUpdateList.Remove(autoTurret);
+                if (AutoTurret.interferenceUpdateList != null)
+                    AutoTurret.interferenceUpdateList.Remove(autoTurret);
 
                 SphereCollider sphereCollider = autoTurret.targetTrigger.GetComponent<SphereCollider>();
                 sphereCollider.enabled = false;
@@ -4653,7 +4652,7 @@ namespace Oxide.Plugins
                     autoTurret.SetTarget(null);
                 }, 1.1f);
 
-                autoTurret.InvokeRepeating(new Action(OptimizedServerTick), UnityEngine.Random.Range(1.2f, 2.2f), 0.015f);
+                autoTurret.InvokeRepeating(new Action(OptimizedServerTick), UnityEngine.Random.Range(1.2f, 2.2f), 0.05f);
                 autoTurret.InvokeRepeating(ScanTargets, 3f, 1f);
             }
 
@@ -5712,12 +5711,13 @@ namespace Oxide.Plugins
                         {
                             lockedByEntCrate.SetLockingEnt(null);
                             lockedByEntCrate.SetLocked(false);
+                            lockedByEntCrate.SetFlag(BaseEntity.Flags.Locked, false);
                         }
 
                         if (eventHeli.heliConfig.cratesLifeTime > 0)
                         {
-                            lockedByEntCrate.CancelInvoke(lockedByEntCrate.RemoveMe);
-                            lockedByEntCrate.Invoke(lockedByEntCrate.RemoveMe, eventHeli.heliConfig.cratesLifeTime);
+                            lockedByEntCrate.CancelInvoke("Kill");
+                            lockedByEntCrate.Invoke("Kill", eventHeli.heliConfig.cratesLifeTime);
                         }
 
                     }, 1f);
@@ -7072,8 +7072,9 @@ namespace Oxide.Plugins
 
         public class CustomizationConfig
         {
+            [JsonProperty(en ? "Enable customizations [true/false]" : "Включить кастомизации [true/false]")] public bool isEnabled { get; set; }
             [JsonProperty(en ? "Customization preset (Empty - use standard wagons)" : "Пресет кастомизации (оставить пустым - использовать стандартые вагоны)")] public string profileName { get; set; }
-            [JsonProperty(en ? "Turn on the electric furnaces (high impact on performance) [true/false]" : "Включить свечение электрических печей (высокое влияение на производительность) [true/false]")] public bool isElectricFurnacesEnable { get; set; }
+            [JsonProperty(en ? "Turn on the electric furnaces (high impact on performance) [true/false]" : "Включить свечение электрических печей (высокое влияение на производительности) [true/false]")] public bool isElectricFurnacesEnable { get; set; }
             [JsonProperty(en ? "Turn on the boilers (medium impact on performance) [true/false]" : "Включить свечение котлов (среднее влияение на производительность) [true/false]")] public bool isBoilersEnable { get; set; }
             [JsonProperty(en ? "Turn on the fire (medium impact on performance) [true/false]" : "Включить огонь (среднее влияение на производительность) [true/false]")] public bool isFireEnable { get; set; }
             [JsonProperty(en ? "Turn on the lighting entities only at night [true/false]" : "Включать предметы освещения только ночью [true/false]")] public bool isLightOnlyAtNight { get; set; }
@@ -7495,6 +7496,7 @@ namespace Oxide.Plugins
                     },
                     customizationConfig = new CustomizationConfig
                     {
+                        isEnabled = true,
                         profileName = "",
                         isElectricFurnacesEnable = false,
                         isBoilersEnable = true,
