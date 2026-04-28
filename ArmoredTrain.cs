@@ -189,6 +189,8 @@ namespace Oxide.Plugins
 
             if (entity.ShortPrefabName == "heli_crate")
                 LootManager.OnHeliCrateSpawned(entity);
+            else if (entity.ShortPrefabName == "bradley_crate")
+                LootManager.OnBradleyCrateSpawned(entity);
         }
 
         object OnEntityTakeDamage(TrainCar trainCar, HitInfo info)
@@ -5742,6 +5744,42 @@ namespace Oxide.Plugins
                     if (PveModeManager.IsPveModeReady())
                         ins.PveMode.Call("EventAddCrates", ins.Name, new HashSet<ulong> { lockedByEntCrate.net.ID.Value });
                 }
+            }
+
+            internal static void OnBradleyCrateSpawned(LockedByEntCrate lockedByEntCrate)
+            {
+                BradleyAPC bradleyAPC = lockedByEntCrate.GetParentEntity() as BradleyAPC;
+
+                if (bradleyAPC == null)
+                    return;
+
+                if (!eventController.IsTrainBradley(bradleyAPC.net.ID.Value))
+                    return;
+
+                lockedByEntCrate.Invoke(() =>
+                {
+                    BradleyConfig bradleyConfig = ins._config.bradleysConfigs.FirstOrDefault(x => x.presetName == eventController.bradleys.FirstOrDefault(b => b == bradleyAPC));
+                    if (bradleyConfig == null)
+                        return;
+
+                    UpdateBaseLootTable(lockedByEntCrate.inventory, bradleyConfig.baseLootTableConfig, bradleyConfig.baseLootTableConfig.clearDefaultItemList);
+
+                    if (bradleyConfig.instCrateOpen)
+                    {
+                        lockedByEntCrate.SetLockingEnt(null);
+                        lockedByEntCrate.SetLocked(false);
+                        lockedByEntCrate.SetFlag(BaseEntity.Flags.Locked, false);
+                    }
+
+                    if (bradleyConfig.cratesLifeTime > 0)
+                    {
+                        lockedByEntCrate.CancelInvoke("Kill");
+                        lockedByEntCrate.Invoke("Kill", bradleyConfig.cratesLifeTime);
+                    }
+                }, 1f);
+
+                if (PveModeManager.IsPveModeReady())
+                    ins.PveMode.Call("EventAddCrates", ins.Name, new HashSet<ulong> { lockedByEntCrate.net.ID.Value });
             }
 
             internal static void OnEventCrateLooted(StorageContainer storageContainer, ulong userId)
