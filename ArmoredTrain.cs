@@ -4225,7 +4225,7 @@ namespace Oxide.Plugins
                         {
                             new FireworkConfig
                             {
-                                presetName = "2024",
+                                presetName = "2026",
                                 isEnabled = true,
                                 color = "(0, 1, 0)",
                                 paintCoordinates = new HashSet<string>
@@ -4405,6 +4405,29 @@ namespace Oxide.Plugins
                         "(0.46, 0.16, 0.00)",
                     };
 
+                static HashSet<string> symbol6 = new HashSet<string>()
+                    {
+                        "(0.01, 0.85, 0.00)",
+                        "(0.00, 1.00, 0.00)",
+                        "(0.13, 1.00, 0.00)",
+                        "(0.28, 1.00, 0.00)",
+                        "(0.43, 1.00, 0.00)",
+                        "(0.43, 0.85, 0.00)",
+                        "(0.44, 0.71, 0.00)",
+                        "(0.01, 0.71, 0.00)",
+                        "(0.02, 0.56, 0.00)",
+                        "(0.03, 0.42, 0.00)",
+                        "(0.04, 0.29, 0.00)",
+                        "(0.04, 0.15, 0.00)",
+                        "(0.04, 0.02, 0.00)",
+                        "(0.19, 0.02, 0.00)",
+                        "(0.33, 0.03, 0.00)",
+                        "(0.46, 0.03, 0.00)",
+                        "(0.44, 0.56, 0.00)",
+                        "(0.45, 0.41, 0.00)",
+                        "(0.46, 0.26, 0.00)",
+                    };
+
                 internal static void UpdatePatternFirework(PatternFirework patternFirework)
                 {
                     patternFirework.Design?.Dispose();
@@ -4412,18 +4435,18 @@ namespace Oxide.Plugins
                     patternFirework.Design = new ProtoBuf.PatternFirework.Design();
                     patternFirework.Design.stars = new List<Star>();
 
-                    Print2024(patternFirework);
+                    Print2026(patternFirework);
                     patternFirework.SendNetworkUpdateImmediate();
                 }
 
-                static void Print2024(PatternFirework patternFirework)
+                static void Print2026(PatternFirework patternFirework)
                 {
                     float x0 = -2;
 
                     PrintSymbol(symbol2, patternFirework, ref x0);
                     PrintSymbol(symbol0, patternFirework, ref x0);
                     PrintSymbol(symbol2, patternFirework, ref x0);
-                    PrintSymbol(symbol4, patternFirework, ref x0);
+                    PrintSymbol(symbol6, patternFirework, ref x0);
                 }
 
                 static void PrintSymbol(HashSet<string> symbol, PatternFirework patternFirework, ref float x0)
