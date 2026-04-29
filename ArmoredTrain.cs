@@ -189,7 +189,9 @@ namespace Oxide.Plugins
 
             if (entity.ShortPrefabName == "heli_crate")
                 LootManager.OnHeliCrateSpawned(entity);
-            else if (entity.ShortPrefabName == "bradley_crate")
+
+            // Fix: Add Bradley crate loot handling
+            if (entity.ShortPrefabName == "bradley_crate")
                 LootManager.OnBradleyCrateSpawned(entity);
         }
 
@@ -341,6 +343,14 @@ namespace Oxide.Plugins
                         {
                             info.damageTypes.ScaleAll(0);
                             return true;
+                        }
+
+                        // Fix: Allow driver to be killed with a single shot even at 1 HP
+                        float remainingHealth = scientistNPC.health;
+                        float totalDamage = info.damageTypes.Total();
+                        if (totalDamage > 0 && totalDamage < remainingHealth && remainingHealth <= 10)
+                        {
+                            info.damageTypes.Set(Rust.DamageType.Generic, remainingHealth + 1);
                         }
                     }
                     eventController.OnTrainAttacked(info.InitiatorPlayer);
@@ -1172,6 +1182,112 @@ namespace Oxide.Plugins
 
             WagonCustomizator.MapSaver.CreateOrAddNewWagonToData(customizationPresetName, wagonShortPrefabName);
         }
+
+        [ChatCommand("atrain.custom")]
+        void ChatCustomizationCommand(BasePlayer player, string command, string[] args)
+        {
+            if (!player.IsAdmin)
+                return;
+
+            if (args.Length < 2)
+            {
+                player.ChatMessage("Usage: /atrain.custom <feature> <true/false>");
+                player.ChatMessage("Features: electricfurnaces, boilers, fire, lightatnight, neonsigns, giftcannon, fireworks");
+                return;
+            }
+
+            string feature = args[0].ToLower();
+            bool enable = args[1].ToLower() == "true" || args[1].ToLower() == "1" || args[1].ToLower() == "yes";
+
+            switch (feature)
+            {
+                case "electricfurnaces":
+                    _config.customizationConfig.isElectricFurnacesEnable = enable;
+                    player.ChatMessage($"Electric furnaces customization {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "boilers":
+                    _config.customizationConfig.isBoilersEnable = enable;
+                    player.ChatMessage($"Boilers customization {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "fire":
+                    _config.customizationConfig.isFireEnable = enable;
+                    player.ChatMessage($"Fire customization {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "lightatnight":
+                    _config.customizationConfig.isLightOnlyAtNight = enable;
+                    player.ChatMessage($"Light only at night {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "neonsigns":
+                    _config.customizationConfig.isNeonSignsEnable = enable;
+                    player.ChatMessage($"Neon signs {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "giftcannon":
+                    _config.customizationConfig.giftCannonSetting.isGiftCannonEnable = enable;
+                    player.ChatMessage($"Gift cannon {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "fireworks":
+                    _config.customizationConfig.fireworksSettings.isFireworksOn = enable;
+                    player.ChatMessage($"Fireworks {(enable ? "enabled" : "disabled")}");
+                    break;
+                default:
+                    player.ChatMessage("Unknown feature. Available: electricfurnaces, boilers, fire, lightatnight, neonsigns, giftcannon, fireworks");
+                    return;
+            }
+            SaveConfig();
+        }
+
+        [ConsoleCommand("atrain.custom")]
+        void ConsoleCustomizationCommand(ConsoleSystem.Arg arg)
+        {
+            if (arg.Player() != null)
+                return;
+
+            if (arg.Args.Length < 2)
+            {
+                Puts("Usage: atrain.custom <feature> <true/false>");
+                Puts("Features: electricfurnaces, boilers, fire, lightatnight, neonsigns, giftcannon, fireworks");
+                return;
+            }
+
+            string feature = arg.Args[0].ToLower();
+            bool enable = arg.Args[1].ToLower() == "true" || arg.Args[1].ToLower() == "1" || arg.Args[1].ToLower() == "yes";
+
+            switch (feature)
+            {
+                case "electricfurnaces":
+                    _config.customizationConfig.isElectricFurnacesEnable = enable;
+                    Puts($"Electric furnaces customization {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "boilers":
+                    _config.customizationConfig.isBoilersEnable = enable;
+                    Puts($"Boilers customization {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "fire":
+                    _config.customizationConfig.isFireEnable = enable;
+                    Puts($"Fire customization {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "lightatnight":
+                    _config.customizationConfig.isLightOnlyAtNight = enable;
+                    Puts($"Light only at night {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "neonsigns":
+                    _config.customizationConfig.isNeonSignsEnable = enable;
+                    Puts($"Neon signs {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "giftcannon":
+                    _config.customizationConfig.giftCannonSetting.isGiftCannonEnable = enable;
+                    Puts($"Gift cannon {(enable ? "enabled" : "disabled")}");
+                    break;
+                case "fireworks":
+                    _config.customizationConfig.fireworksSettings.isFireworksOn = enable;
+                    Puts($"Fireworks {(enable ? "enabled" : "disabled")}");
+                    break;
+                default:
+                    Puts("Unknown feature. Available: electricfurnaces, boilers, fire, lightatnight, neonsigns, giftcannon, fireworks");
+                    return;
+            }
+            SaveConfig();
+        }
         #endregion Commands
 
         #region Methods
@@ -1696,6 +1812,7 @@ namespace Oxide.Plugins
                         _config.mainConfig.isNpcJumpInSubway = true;
                         _config.mainConfig.isNpcJumpOnSurface = true;
                         _config.mainConfig.allowDriverDamage = true;
+                        _config.mainConfig.extendEventIfNotEnoughTime = true;
                         _config.mainConfig.reviveTrainDriver = true;
 
                         _config.mainConfig.customSpawnPointConfig = new CustomSpawnPointConfig
@@ -1880,7 +1997,7 @@ namespace Oxide.Plugins
                     LootTableConfig.items.RemoveAt(i);
             }
 
-            LootTableConfig.items = LootTableConfig.items.OrderByQuickSort(x => x.chance);
+            LootTableConfig.items = LootTableConfig.items.OrderBy(x => x.chance).ToList();
 
             if (LootTableConfig.maxItemsAmount > LootTableConfig.items.Count)
                 LootTableConfig.maxItemsAmount = LootTableConfig.items.Count;
@@ -2265,7 +2382,8 @@ namespace Oxide.Plugins
                 if (hackTime <= 0)
                     hackTime = 900;
 
-                if (!ins._config.mainConfig.extendEventForLockedCrate)
+                // Fix: Only extend event time if configured to do so
+                if (!ins._config.mainConfig.extendEventIfNotEnoughTime)
                     return;
 
                 int minEventTime = hackTime + 30;
@@ -3237,33 +3355,32 @@ namespace Oxide.Plugins
                 if (ins._config.customizationConfig.profileName == "")
                     return;
 
-                if (!ins._config.customizationConfig.isEnabled)
-                    return;
-
-                customizeProfile = LoadProfile(ins._config.customizationConfig.profileName);
-
-                if (customizeProfile == null)
+                try
                 {
-                    customizeProfile = new CustomizeProfile
+                    customizeProfile = LoadProfile(ins._config.customizationConfig.profileName);
+
+                    if (customizeProfile == null)
                     {
-                        wagonPresets = new List<WagonCustomizationData>(),
-                        npcPresets = GetNewNpcCustomizeConfig()
-                    };
-                    SaveProfile(customizeProfile, ins._config.customizationConfig.profileName);
-                    ins.PrintWarning($"Created new customization profile: {ins._config.customizationConfig.profileName}.json");
-                }
+                        ins.PrintWarning($"Customization profile '{ins._config.customizationConfig.profileName}' not found or failed to load.");
+                    }
 
-                if (!IsCustomizationCanApplied())
+                    if (!IsCustomizationCanApplied())
+                    {
+                        NotifyManager.PrintError(null, "DataFileNotFound_Exeption", ins._config.customizationConfig.profileName);
+                        return;
+                    }
+                    
+                    ins.Puts($"Customization profile '{ins._config.customizationConfig.profileName}' loaded successfully.");
+                }
+                catch (Exception ex)
                 {
-                    NotifyManager.PrintError(null, "DataFileNotFound_Exeption", ins._config.customizationConfig.profileName);
-                    return;
+                    ins.PrintError($"Error loading customization profile '{ins._config.customizationConfig.profileName}': {ex.Message}");
+                    customizeProfile = null;
                 }
             }
 
             internal static bool IsCustomizationCanApplied()
             {
-                if (!ins._config.customizationConfig.isEnabled)
-                    return false;
                 return customizeProfile != null && customizeProfile.wagonPresets != null && customizeProfile.wagonPresets.Count > 0;
             }
 
@@ -4214,6 +4331,16 @@ namespace Oxide.Plugins
                         };
                 }
 
+                internal static CustomizeProfile GetNYCustomizeProfile()
+                {
+                    return new CustomizeProfile
+                    {
+                        wagonPresets = new List<WagonCustomizationData>(),
+                        npcPresets = GetNYNpcConfigs(),
+                        fireworkConfigs = GetNYFireWorksConfig()
+                    };
+                }
+
                 static List<FireworkConfig> GetFireWorksConfig()
                 {
                     return GetNYFireWorksConfig();
@@ -4225,9 +4352,84 @@ namespace Oxide.Plugins
                         {
                             new FireworkConfig
                             {
-                                presetName = "2026",
+                                presetName = "2024",
                                 isEnabled = true,
                                 color = "(0, 1, 0)",
+                                paintCoordinates = new HashSet<string>
+                                {
+                                    "(0.01, 0.85, 0.00)",
+                                    "(0.00, 1.00, 0.00)",
+                                    "(0.13, 1.00, 0.00)",
+                                    "(0.28, 1.00, 0.00)",
+                                    "(0.43, 1.00, 0.00)",
+                                    "(0.43, 0.85, 0.00)",
+                                    "(0.43, 0.71, 0.00)",
+                                    "(0.33, 0.59, 0.00)",
+                                    "(0.22, 0.50, 0.00)",
+                                    "(0.11, 0.41, 0.00)",
+                                    "(0.04, 0.29, 0.00)",
+                                    "(0.04, 0.15, 0.00)",
+                                    "(0.04, 0.02, 0.00)",
+                                    "(0.19, 0.02, 0.00)",
+                                    "(0.33, 0.03, 0.00)",
+                                    "(0.48, 0.04, 0.00)",
+                                    "(0.74, 0.85, 0.00)",
+                                    "(0.73, 1.00, 0.00)",
+                                    "(0.86, 1.00, 0.00)",
+                                    "(1.01, 1.00, 0.00)",
+                                    "(1.16, 1.00, 0.00)",
+                                    "(1.16, 0.85, 0.00)",
+                                    "(1.17, 0.71, 0.00)",
+                                    "(0.74, 0.71, 0.00)",
+                                    "(0.75, 0.56, 0.00)",
+                                    "(0.76, 0.42, 0.00)",
+                                    "(0.77, 0.29, 0.00)",
+                                    "(0.77, 0.15, 0.00)",
+                                    "(0.77, 0.02, 0.00)",
+                                    "(0.92, 0.02, 0.00)",
+                                    "(1.06, 0.03, 0.00)",
+                                    "(1.19, 0.03, 0.00)",
+                                    "(1.17, 0.56, 0.00)",
+                                    "(1.18, 0.41, 0.00)",
+                                    "(1.19, 0.26, 0.00)",
+                                    "(1.19, 0.16, 0.00)",
+                                    "(1.45, 0.85, 0.00)",
+                                    "(1.44, 1.00, 0.00)",
+                                    "(1.57, 1.00, 0.00)",
+                                    "(1.72, 1.00, 0.00)",
+                                    "(1.87, 1.00, 0.00)",
+                                    "(1.87, 0.85, 0.00)",
+                                    "(1.87, 0.71, 0.00)",
+                                    "(1.77, 0.59, 0.00)",
+                                    "(1.66, 0.50, 0.00)",
+                                    "(1.55, 0.41, 0.00)",
+                                    "(1.48, 0.29, 0.00)",
+                                    "(1.48, 0.15, 0.00)",
+                                    "(1.48, 0.02, 0.00)",
+                                    "(1.63, 0.02, 0.00)",
+                                    "(1.77, 0.03, 0.00)",
+                                    "(1.92, 0.04, 0.00)",
+                                    "(2.18, 0.85, 0.00)",
+                                    "(2.17, 1.00, 0.00)",
+                                    "(2.49, 0.56, 0.00)",
+                                    "(2.34, 0.56, 0.00)",
+                                    "(2.60, 1.00, 0.00)",
+                                    "(2.60, 0.85, 0.00)",
+                                    "(2.61, 0.71, 0.00)",
+                                    "(2.18, 0.71, 0.00)",
+                                    "(2.19, 0.56, 0.00)",
+                                    "(2.63, 0.03, 0.00)",
+                                    "(2.61, 0.56, 0.00)",
+                                    "(2.62, 0.41, 0.00)",
+                                    "(2.63, 0.26, 0.00)",
+                                    "(2.63, 0.16, 0.00)"
+                                }
+                            },
+                            new FireworkConfig
+                            {
+                                presetName = "2026",
+                                isEnabled = true,
+                                color = "(1, 0, 0)",
                                 paintCoordinates = new HashSet<string>
                                 {
                                     "(0.01, 0.85, 0.00)",
@@ -4405,29 +4607,6 @@ namespace Oxide.Plugins
                         "(0.46, 0.16, 0.00)",
                     };
 
-                static HashSet<string> symbol6 = new HashSet<string>()
-                    {
-                        "(0.01, 0.85, 0.00)",
-                        "(0.00, 1.00, 0.00)",
-                        "(0.13, 1.00, 0.00)",
-                        "(0.28, 1.00, 0.00)",
-                        "(0.43, 1.00, 0.00)",
-                        "(0.43, 0.85, 0.00)",
-                        "(0.44, 0.71, 0.00)",
-                        "(0.01, 0.71, 0.00)",
-                        "(0.02, 0.56, 0.00)",
-                        "(0.03, 0.42, 0.00)",
-                        "(0.04, 0.29, 0.00)",
-                        "(0.04, 0.15, 0.00)",
-                        "(0.04, 0.02, 0.00)",
-                        "(0.19, 0.02, 0.00)",
-                        "(0.33, 0.03, 0.00)",
-                        "(0.46, 0.03, 0.00)",
-                        "(0.44, 0.56, 0.00)",
-                        "(0.45, 0.41, 0.00)",
-                        "(0.46, 0.26, 0.00)",
-                    };
-
                 internal static void UpdatePatternFirework(PatternFirework patternFirework)
                 {
                     patternFirework.Design?.Dispose();
@@ -4435,18 +4614,18 @@ namespace Oxide.Plugins
                     patternFirework.Design = new ProtoBuf.PatternFirework.Design();
                     patternFirework.Design.stars = new List<Star>();
 
-                    Print2026(patternFirework);
+                    Print2024(patternFirework);
                     patternFirework.SendNetworkUpdateImmediate();
                 }
 
-                static void Print2026(PatternFirework patternFirework)
+                static void Print2024(PatternFirework patternFirework)
                 {
                     float x0 = -2;
 
                     PrintSymbol(symbol2, patternFirework, ref x0);
                     PrintSymbol(symbol0, patternFirework, ref x0);
                     PrintSymbol(symbol2, patternFirework, ref x0);
-                    PrintSymbol(symbol6, patternFirework, ref x0);
+                    PrintSymbol(symbol4, patternFirework, ref x0);
                 }
 
                 static void PrintSymbol(HashSet<string> symbol, PatternFirework patternFirework, ref float x0)
@@ -4690,12 +4869,19 @@ namespace Oxide.Plugins
 
                 autoTurret.Invoke(() =>
                 {
-                    autoTurret.CancelInvoke(autoTurret.ServerTick);
                     autoTurret.SetTarget(null);
                 }, 1.1f);
 
-                autoTurret.InvokeRepeating(new Action(OptimizedServerTick), UnityEngine.Random.Range(1.2f, 2.2f), 0.05f);
-                autoTurret.InvokeRepeating(ScanTargets, 3f, 1f);
+                // Fix: Increased tick interval from 0.05f to 0.2f to reduce server FPS drops with many turrets
+                autoTurret.InvokeRepeating(new Action(OptimizedServerTick), UnityEngine.Random.Range(1.2f, 2.2f), 0.2f);
+                autoTurret.InvokeRepeating(ScanTargets, 3f, 2f);
+            }
+
+            void OnDestroy()
+            {
+                // Fix: Ensure turret is removed from interference list when destroyed
+                if (autoTurret != null && AutoTurret.interferenceUpdateList != null)
+                    AutoTurret.interferenceUpdateList.Remove(autoTurret);
             }
 
             private void ScanTargets()
@@ -5061,7 +5247,7 @@ namespace Oxide.Plugins
             {
                 internal static PositionData GetSpawnPosition()
                 {
-                    List<LocationConfig> suitablePoints = Pool.GetList<LocationConfig>();
+                    List<LocationConfig> suitablePoints = new List<LocationConfig>();
 
                     foreach (LocationConfig locationConfig in ins._config.mainConfig.customSpawnPointConfig.points)
                     {
@@ -5086,7 +5272,6 @@ namespace Oxide.Plugins
                         positionData = new PositionData(position, Quaternion.Euler(randomLocationConfig.rotation.ToVector3()));
                     }
 
-                    Pool.FreeList(ref suitablePoints);
                     return positionData;
                 }
             }
@@ -5272,38 +5457,10 @@ namespace Oxide.Plugins
             static HashSet<ulong> pveModeOwners = new HashSet<ulong>();
             static BasePlayer owner;
             static float lastZoneDeleteTime;
-            static Dictionary<ulong, bool> actionCache = new Dictionary<ulong, bool>();
-            static Dictionary<ulong, float> actionCacheTime = new Dictionary<ulong, float>();
-            const float CACHE_DURATION = 1.0f;
 
             internal static bool IsPveModeReady()
             {
                 return ins._config.supportedPluginsConfig.pveMode.enable && ins.plugins.Exists("PveMode");
-            }
-
-            static bool GetCachedActionResult(ulong playerId, out bool result)
-            {
-                result = false;
-                if (!actionCacheTime.ContainsKey(playerId))
-                    return false;
-
-                if (Time.realtimeSinceStartup - actionCacheTime[playerId] > CACHE_DURATION)
-                    return false;
-
-                result = actionCache[playerId];
-                return true;
-            }
-
-            static void SetCachedActionResult(ulong playerId, bool result)
-            {
-                actionCache[playerId] = result;
-                actionCacheTime[playerId] = Time.realtimeSinceStartup;
-            }
-
-            internal static void ClearCache()
-            {
-                actionCache.Clear();
-                actionCacheTime.Clear();
             }
 
             internal static BasePlayer UpdateAndGetEventOwner()
@@ -5420,22 +5577,14 @@ namespace Oxide.Plugins
                 lastZoneDeleteTime = 0;
                 pveModeOwners.Clear();
                 owner = null;
-                ClearCache();
             }
 
             internal static bool IsPveModeBlockAction(BasePlayer player)
             {
-                if (!IsPveModeReady())
-                    return false;
+                if (IsPveModeReady())
+                    return ins.PveMode.Call("CanActionEvent", ins.Name, player) != null;
 
-                ulong playerId = player.userID;
-                bool cachedResult;
-                if (GetCachedActionResult(playerId, out cachedResult))
-                    return cachedResult;
-
-                bool result = ins.PveMode.Call("CanActionEvent", ins.Name, player) != null;
-                SetCachedActionResult(playerId, result);
-                return result;
+                return false;
             }
 
             internal static bool IsPveModeBlockInterract(BasePlayer player)
@@ -5566,7 +5715,7 @@ namespace Oxide.Plugins
 
                 vendingMarker.transform.position = position;
                 BasePlayer pveModeEventOwner = PveModeManager.UpdateAndGetEventOwner();
-                string displayEventOwnerName = ins._config.supportedPluginsConfig.pveMode.showEventOwnerNameOnMap && pveModeEventOwner != null ? GetMessage("Marker_EventOwner", null, pveModeEventOwner.displayName) : "";
+                string displayEventOwnerName = ins._config.supportedPluginsConfig.pveMode.showEventOwnerNameOnMap && pveModeEventOwner != null ? ins.lang.GetMessage("Marker_EventOwner", ins, null).Replace("{0}", pveModeEventOwner.displayName) : "";
                 vendingMarker.markerShopName = $"{ins.eventController.eventConfig.displayName} ({NotifyManager.GetTimeMessage(null, ins.eventController.GetEventTime())}) {displayEventOwnerName}";
                 vendingMarker.SetFlag(BaseEntity.Flags.Busy, pveModeEventOwner == null);
                 vendingMarker.SendNetworkUpdate();
@@ -5807,38 +5956,29 @@ namespace Oxide.Plugins
 
             internal static void OnBradleyCrateSpawned(LockedByEntCrate lockedByEntCrate)
             {
-                BradleyAPC bradleyAPC = lockedByEntCrate.GetParentEntity() as BradleyAPC;
-
-                if (bradleyAPC == null)
+                if (ins.eventController == null)
                     return;
 
-                if (!eventController.IsTrainBradley(bradleyAPC.net.ID.Value))
-                    return;
-
-                lockedByEntCrate.Invoke(() =>
+                if (Vector3.Distance(lockedByEntCrate.transform.position, ins.eventController.GetEventPosition()) <= ins.eventController.eventConfig.zoneRadius)
                 {
-                    BradleyConfig bradleyConfig = ins._config.bradleysConfigs.FirstOrDefault(x => x.presetName == eventController.bradleys.FirstOrDefault(b => b == bradleyAPC));
-                    if (bradleyConfig == null)
-                        return;
-
-                    UpdateBaseLootTable(lockedByEntCrate.inventory, bradleyConfig.baseLootTableConfig, bradleyConfig.baseLootTableConfig.clearDefaultItemList);
-
-                    if (bradleyConfig.instCrateOpen)
+                    lockedByEntCrate.Invoke(() =>
                     {
+                        CrateConfig crateConfig = ins._config.crateConfigs.FirstOrDefault(x => true);
+                        if (crateConfig != null)
+                        {
+                            UpdateBaseLootTable(lockedByEntCrate.inventory, crateConfig.lootTableConfig, crateConfig.lootTableConfig.clearDefaultItemList);
+
+                        }
+
                         lockedByEntCrate.SetLockingEnt(null);
                         lockedByEntCrate.SetLocked(false);
                         lockedByEntCrate.SetFlag(BaseEntity.Flags.Locked, false);
-                    }
 
-                    if (bradleyConfig.cratesLifeTime > 0)
-                    {
-                        lockedByEntCrate.CancelInvoke("Kill");
-                        lockedByEntCrate.Invoke("Kill", bradleyConfig.cratesLifeTime);
-                    }
-                }, 1f);
+                    }, 1f);
 
-                if (PveModeManager.IsPveModeReady())
-                    ins.PveMode.Call("EventAddCrates", ins.Name, new HashSet<ulong> { lockedByEntCrate.net.ID.Value });
+                    if (PveModeManager.IsPveModeReady())
+                        ins.PveMode.Call("EventAddCrates", ins.Name, new HashSet<ulong> { lockedByEntCrate.net.ID.Value });
+                }
             }
 
             internal static void OnEventCrateLooted(StorageContainer storageContainer, ulong userId)
@@ -5920,7 +6060,7 @@ namespace Oxide.Plugins
                         baseLootTableConfig.items.RemoveAt(i);
                 }
 
-                baseLootTableConfig.items = baseLootTableConfig.items.OrderByQuickSort(x => x.chance);
+                baseLootTableConfig.items = baseLootTableConfig.items.OrderBy(x => x.chance).ToList();
 
                 if (baseLootTableConfig.maxItemsAmount > baseLootTableConfig.items.Count)
                     baseLootTableConfig.maxItemsAmount = baseLootTableConfig.items.Count;
@@ -6505,20 +6645,26 @@ namespace Oxide.Plugins
 
         static class NotifyManager
         {
+            internal static string GetFormattedMessage(string langKey, string userIDString = null, params object[] args)
+            {
+                string message = ins.lang.GetMessage(langKey, ins, userIDString);
+                return args == null || args.Length == 0 ? message : string.Format(message, args);
+            }
+
             internal static void PrintInfoMessage(BasePlayer player, string langKey, params object[] args)
             {
                 if (player == null)
-                    ins.PrintWarning(ClearColorAndSize(GetMessage(langKey, null, args)));
+                    ins.PrintWarning(ClearColorAndSize(GetFormattedMessage(langKey, null, args)));
                 else
-                    ins.PrintToChat(player, GetMessage(langKey, player.UserIDString, args));
+                    ins.PrintToChat(player, GetFormattedMessage(langKey, player.UserIDString, args));
             }
 
             internal static void PrintError(BasePlayer player, string langKey, params object[] args)
             {
                 if (player == null)
-                    ins.PrintError(ClearColorAndSize(GetMessage(langKey, null, args)));
+                    ins.PrintError(ClearColorAndSize(GetFormattedMessage(langKey, null, args)));
                 else
-                    ins.PrintToChat(player, GetMessage(langKey, player.UserIDString, args));
+                    ins.PrintToChat(player, GetFormattedMessage(langKey, player.UserIDString, args));
             }
 
             internal static void PrintLogMessage(string langKey, params object[] args)
@@ -6527,12 +6673,12 @@ namespace Oxide.Plugins
                     if (args[i] is int)
                         args[i] = GetTimeMessage(null, (int)args[i]);
 
-                ins.Puts(ClearColorAndSize(GetMessage(langKey, null, args)));
+                ins.Puts(ClearColorAndSize(GetFormattedMessage(langKey, null, args)));
             }
 
             internal static void PrintWarningMessage(string langKey, params object[] args)
             {
-                ins.PrintWarning(ClearColorAndSize(GetMessage(langKey, null, args)));
+                ins.PrintWarning(ClearColorAndSize(GetFormattedMessage(langKey, null, args)));
             }
 
             internal static string ClearColorAndSize(string message)
@@ -6567,7 +6713,7 @@ namespace Oxide.Plugins
                     if (args[i] is int)
                         args[i] = GetTimeMessage(player.UserIDString, (int)args[i]);
 
-                string playerMessage = GetMessage(langKey, player.UserIDString, args);
+                string playerMessage = string.Format(ins.lang.GetMessage(langKey, ins, player.UserIDString), args);
 
                 if (ins._config.notifyConfig.isChatEnable)
                     ins.PrintToChat(player, playerMessage);
@@ -6587,9 +6733,9 @@ namespace Oxide.Plugins
                 string message = "";
 
                 TimeSpan timeSpan = TimeSpan.FromSeconds(seconds);
-                if (timeSpan.Hours > 0) message += $" {timeSpan.Hours} {GetMessage("Hours", userIDString)}";
-                if (timeSpan.Minutes > 0) message += $" {timeSpan.Minutes} {GetMessage("Minutes", userIDString)}";
-                if (message == "") message += $" {timeSpan.Seconds} {GetMessage("Seconds", userIDString)}";
+                if (timeSpan.Hours > 0) message += $" {timeSpan.Hours} {ins.lang.GetMessage("Hours", ins, userIDString)}";
+                if (timeSpan.Minutes > 0) message += $" {timeSpan.Minutes} {ins.lang.GetMessage("Minutes", ins, userIDString)}";
+                if (message == "") message += $" {timeSpan.Seconds} {ins.lang.GetMessage("Seconds", ins, userIDString)}";
 
                 return message;
             }
@@ -6602,7 +6748,7 @@ namespace Oxide.Plugins
                         if (args[i] is int)
                             args[i] = GetTimeMessage(null, (int)args[i]);
 
-                    object fields = new[] { new { name = ins.Title, value = ClearColorAndSize(GetMessage(langKey, null, args)), inline = false } };
+                    object fields = new[] { new { name = ins.Title, value = ClearColorAndSize(string.Format(ins.lang.GetMessage(langKey, ins, null), args)), inline = false } };
                     ins.DiscordMessages?.Call("API_SendFancyMessage", ins._config.supportedPluginsConfig.discordMessagesConfig.webhookUrl, "", ins._config.supportedPluginsConfig.discordMessagesConfig.embedColor, JsonConvert.SerializeObject(fields), null, ins);
                 }
             }
@@ -6940,12 +7086,12 @@ namespace Oxide.Plugins
 
                 ["Marker_EventOwner"] = "Event Owner: {0}",
 
-                ["EventStart_Log"] = "The event has begun! (Preset name - {0})",
                 ["EventStop_Log"] = "The event is over!",
 
                 ["PveMode_BlockAction"] = "{0} You <color=#ce3f27>can't interact</color> with the event because of the cooldown!",
                 ["PveMode_YouAreNoOwner"] = "{0} You are not the <color=#ce3f27>owner</color> of the event!",
             }, this);
+        }
         #endregion Lang
 
         #region Config
@@ -7044,47 +7190,47 @@ namespace Oxide.Plugins
             if (_config.eventConfigs == null)
             {
                 PrintWarning("eventConfigs is null! Initializing empty list.");
-                _config.eventConfigs = new List<EventConfig>();
+                _config.eventConfigs = new HashSet<EventConfig>();
             }
             if (_config.locomotiveConfigs == null)
             {
                 PrintWarning("locomotiveConfigs is null! Initializing empty list.");
-                _config.locomotiveConfigs = new List<LocomotiveConfig>();
+                _config.locomotiveConfigs = new HashSet<LocomotiveConfig>();
             }
             if (_config.wagonConfigs == null)
             {
                 PrintWarning("wagonConfigs is null! Initializing empty list.");
-                _config.wagonConfigs = new List<WagonConfig>();
+                _config.wagonConfigs = new HashSet<WagonConfig>();
             }
             if (_config.crateConfigs == null)
             {
                 PrintWarning("crateConfigs is null! Initializing empty list.");
-                _config.crateConfigs = new List<CrateConfig>();
+                _config.crateConfigs = new HashSet<CrateConfig>();
             }
             if (_config.npcConfigs == null)
             {
                 PrintWarning("npcConfigs is null! Initializing empty list.");
-                _config.npcConfigs = new List<NpcConfig>();
+                _config.npcConfigs = new HashSet<NpcConfig>();
             }
             if (_config.heliConfigs == null)
             {
                 PrintWarning("heliConfigs is null! Initializing empty list.");
-                _config.heliConfigs = new List<HeliConfig>();
+                _config.heliConfigs = new HashSet<HeliConfig>();
             }
-            if (_config.bradleyConfigs == null)
+            if (_config.bradleysConfigs == null)
             {
-                PrintWarning("bradleyConfigs is null! Initializing empty list.");
-                _config.bradleyConfigs = new List<BradleyConfig>();
+                PrintWarning("bradleysConfigs is null! Initializing empty list.");
+                _config.bradleysConfigs = new HashSet<BradleyConfig>();
             }
             if (_config.turretConfigs == null)
             {
                 PrintWarning("turretConfigs is null! Initializing empty list.");
-                _config.turretConfigs = new List<TurretConfig>();
+                _config.turretConfigs = new HashSet<TurretConfig>();
             }
-            if (_config.samSiteConfigs == null)
+            if (_config.samsiteConfigs == null)
             {
-                PrintWarning("samSiteConfigs is null! Initializing empty list.");
-                _config.samSiteConfigs = new List<SamSiteConfig>();
+                PrintWarning("samsiteConfigs is null! Initializing empty list.");
+                _config.samsiteConfigs = new HashSet<SamSiteConfig>();
             }
         }
 
@@ -7164,6 +7310,7 @@ namespace Oxide.Plugins
             [JsonProperty(en ? "Time to destroy the train after opening all the crates [sec]" : "Время до уничтожения поезда после открытия всех ящиков [sec]")] public int endAfterLootTime { get; set; }
             [JsonProperty(en ? "Destroy wagons in front of the train [true/false]" : "Уничтожать вагоны перед поездом [true/false]")] public bool destrroyWagons { get; set; }
             [JsonProperty(en ? "Allow damage to the train driver [true/false]" : "Разрешить урон по водителю поезда [true/false]")] public bool allowDriverDamage { get; set; }
+            [JsonProperty(en ? "Extend event if remaining time is not enough to unlock a locked crate [true/false]" : "Продлевать ивент, если оставшегося времени недостаточно для взлома ящика [true/false]")] public bool extendEventIfNotEnoughTime { get; set; }
             [JsonProperty(en ? "To revive the train driver if he was killed? [true/false]" : "Возрождать водителя поезда, если он был убит [true/false]")] public bool reviveTrainDriver { get; set; }
             [JsonProperty(en ? "Enable logging of the start and end of the event? [true/false]" : "Включить логирование начала и окончания ивента? [true/false]")] public bool enableStartStopLogs { get; set; }
             [JsonProperty(en ? "The turrets of the train will drop loot after destruction? [true/false]" : "Турели поезда будут оставлять лут после уничтожения? [true/false]")] public bool isTurretDropWeapon { get; set; }
@@ -7175,7 +7322,6 @@ namespace Oxide.Plugins
             [JsonProperty(en ? "The NPC will jump to the ground when the train stops (above ground)" : "НПС будет спрыгивать на землю при остановке поезда (на поверхности)")] public bool isNpcJumpOnSurface { get; set; }
             [JsonProperty(en ? "The NPC will jump to the ground when the train stops (underground)" : "НПС будет спрыгивать на землю при остановке поезда (в метро)")] public bool isNpcJumpInSubway { get; set; }
             [JsonProperty(en ? "The event will not end if there are players in the event zone [true/false]" : "Ивент не будет заканчиваться, если в зоне ивента есть игроки [true/false]")] public bool dontStopEventIfPlayerInZone { get; set; }
-            [JsonProperty(en ? "Extend event if remaining time is not enough to unlock a locked crate [true/false]" : "Продлевать ивент, если оставшегося времени недостаточно для взлома заблокированного ящика [true/false]")] public bool extendEventForLockedCrate { get; set; }
             [JsonProperty(en ? "Setting up custom spawn points" : "Настройка кастомных тоек спавна")] public CustomSpawnPointConfig customSpawnPointConfig { get; set; }
         }
 
@@ -7187,9 +7333,8 @@ namespace Oxide.Plugins
 
         public class CustomizationConfig
         {
-            [JsonProperty(en ? "Enable customizations [true/false]" : "Включить кастомизации [true/false]")] public bool isEnabled { get; set; }
             [JsonProperty(en ? "Customization preset (Empty - use standard wagons)" : "Пресет кастомизации (оставить пустым - использовать стандартые вагоны)")] public string profileName { get; set; }
-            [JsonProperty(en ? "Turn on the electric furnaces (high impact on performance) [true/false]" : "Включить свечение электрических печей (высокое влияение на производительности) [true/false]")] public bool isElectricFurnacesEnable { get; set; }
+            [JsonProperty(en ? "Turn on the electric furnaces (high impact on performance) [true/false]" : "Включить свечение электрических печей (высокое влияение на производительность) [true/false]")] public bool isElectricFurnacesEnable { get; set; }
             [JsonProperty(en ? "Turn on the boilers (medium impact on performance) [true/false]" : "Включить свечение котлов (среднее влияение на производительность) [true/false]")] public bool isBoilersEnable { get; set; }
             [JsonProperty(en ? "Turn on the fire (medium impact on performance) [true/false]" : "Включить огонь (среднее влияение на производительность) [true/false]")] public bool isFireEnable { get; set; }
             [JsonProperty(en ? "Turn on the lighting entities only at night [true/false]" : "Включать предметы освещения только ночью [true/false]")] public bool isLightOnlyAtNight { get; set; }
@@ -7592,6 +7737,7 @@ namespace Oxide.Plugins
                         endAfterLootTime = 300,
                         destrroyWagons = false,
                         allowDriverDamage = true,
+                        extendEventIfNotEnoughTime = true,
                         reviveTrainDriver = true,
                         enableStartStopLogs = false,
                         isTurretDropWeapon = false,
@@ -7603,7 +7749,6 @@ namespace Oxide.Plugins
                         isNpcJumpOnSurface = true,
                         isNpcJumpInSubway = true,
                         dontStopEventIfPlayerInZone = false,
-                        extendEventForLockedCrate = false,
                         customSpawnPointConfig = new CustomSpawnPointConfig
                         {
                             isEnabled = false,
@@ -7612,7 +7757,6 @@ namespace Oxide.Plugins
                     },
                     customizationConfig = new CustomizationConfig
                     {
-                        isEnabled = true,
                         profileName = "",
                         isElectricFurnacesEnable = false,
                         isBoilersEnable = true,
@@ -9992,39 +10136,5 @@ namespace Oxide.Plugins.ArmoredTrainExtensionMethods
         public static TSource Last<TSource>(this IList<TSource> source) => source[source.Count - 1];
 
         public static bool IsEqualVector3(this Vector3 a, Vector3 b) => Vector3.Distance(a, b) < 0.1f;
-
-        public static List<TSource> OrderByQuickSort<TSource>(this List<TSource> source, Func<TSource, float> predicate)
-        {
-            return source.QuickSort(predicate, 0, source.Count - 1);
-        }
-
-        private static List<TSource> QuickSort<TSource>(this List<TSource> source, Func<TSource, float> predicate, int minIndex, int maxIndex)
-        {
-            if (minIndex >= maxIndex) return source;
-
-            int pivotIndex = minIndex - 1;
-            for (int i = minIndex; i < maxIndex; i++)
-            {
-                if (predicate(source[i]) < predicate(source[maxIndex]))
-                {
-                    pivotIndex++;
-                    source.Replace(pivotIndex, i);
-                }
-            }
-            pivotIndex++;
-            source.Replace(pivotIndex, maxIndex);
-
-            QuickSort(source, predicate, minIndex, pivotIndex - 1);
-            QuickSort(source, predicate, pivotIndex + 1, maxIndex);
-
-            return source;
-        }
-
-        private static void Replace<TSource>(this IList<TSource> source, int x, int y)
-        {
-            TSource t = source[x];
-            source[x] = source[y];
-            source[y] = t;
-        }
     }
 }
