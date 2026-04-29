@@ -145,6 +145,7 @@ namespace Oxide.Plugins
         void Init()
         {
             Unsubscribes();
+            permission.RegisterPermission("atrain.admin", this);
         }
 
         void OnServerInitialized()
@@ -153,9 +154,6 @@ namespace Oxide.Plugins
 
             if (_config == null)
                 LoadDefaultConfig();
-
-            if (!NpcSpawnManager.IsNpcSpawnReady())
-                return;
 
             LoadDefaultMessages();
             UpdateConfig();
@@ -1047,7 +1045,7 @@ namespace Oxide.Plugins
         [ChatCommand("atrainstart")]
         void ChatStartCommand(BasePlayer player, string command, string[] arg)
         {
-            if (!player.IsAdmin)
+            if (!permission.UserHasPermission(player.UserIDString, "atrain.admin"))
                 return;
 
             if (arg == null || arg.Length == 0)
@@ -1062,8 +1060,10 @@ namespace Oxide.Plugins
         [ChatCommand("atrainstop")]
         void ChatStopCommand(BasePlayer player, string command, string[] arg)
         {
-            if (player.IsAdmin)
-                EventLauncher.StopEvent();
+            if (!permission.UserHasPermission(player.UserIDString, "atrain.admin"))
+                return;
+                
+            EventLauncher.StopEvent();
         }
 
         [ConsoleCommand("atrainstart")]
@@ -5774,13 +5774,13 @@ namespace Oxide.Plugins
 
             internal static bool IsNpcSpawnReady()
             {
-                if (!ins.plugins.Exists("NpcSpawn"))
+                // Check using PluginReference field which is more reliable than plugins.Exists
+                if (ins.NpcSpawn == null)
                 {
                     ins.PrintError("NpcSpawn plugin doesn`t exist! Please read the file ReadMe.txt. NPCs will not spawn!");
                     return false;
                 }
-                else
-                    return true;
+                return true;
             }
 
             internal static bool IsEventNpc(ScientistNPC scientistNPC)
