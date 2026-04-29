@@ -5777,7 +5777,6 @@ namespace Oxide.Plugins
                 if (!ins.plugins.Exists("NpcSpawn"))
                 {
                     ins.PrintError("NpcSpawn plugin doesn`t exist! Please read the file ReadMe.txt. NPCs will not spawn!");
-                    ins.NextTick(() => Interface.Oxide.UnloadPlugin(ins.Name));
                     return false;
                 }
                 else
@@ -5956,7 +5955,7 @@ namespace Oxide.Plugins
 
             internal static void OnBradleyCrateSpawned(LockedByEntCrate lockedByEntCrate)
             {
-                if (ins.eventController == null)
+                if (ins == null || ins.eventController == null)
                     return;
 
                 if (Vector3.Distance(lockedByEntCrate.transform.position, ins.eventController.GetEventPosition()) <= ins.eventController.eventConfig.zoneRadius)
@@ -6838,7 +6837,6 @@ namespace Oxide.Plugins
             static void OnImageSaveFailed(string imageName)
             {
                 NotifyManager.PrintError(null, $"Image {imageName} was not found. Maybe you didn't upload it to the .../oxide/data/Images/ folder");
-                Interface.Oxide.UnloadPlugin(ins.Name);
             }
 
             internal static void CreateGui(BasePlayer player, params string[] args)
